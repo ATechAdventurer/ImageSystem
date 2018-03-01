@@ -19,11 +19,11 @@ var storage = multer.diskStorage({
     }
 })
 
-var upload = multer({ storage: storage })
+var upload = multer({ storage: storage });
 let config = require('./config');
 
-
-var mongoDB = "n";
+console.log(config.MongoDB_URL, "Hi");
+var mongoDB = config.MongoDB_URL;
 mongoose.connect(mongoDB);
 mongoose.Promise = global.Promise;
 var db = mongoose.connection;
@@ -35,6 +35,7 @@ var Image = mongoose.model('Image', imageSchema);
 
 let app = express();
 
+
 app.post("/api/image", upload.single('image'), function(req, res){
     let item = {title: req.body.title, tags: JSON.parse(req.body.tags), filename: req.file.filename};
     //let store = data.getItemSync('images');
@@ -42,6 +43,9 @@ app.post("/api/image", upload.single('image'), function(req, res){
     //data.setItemSync('images', store);
     //res.json(item);
     new Image(item).save().then(function(err, data){
+        if(err){
+            console.log(err);
+        }
         res.send("Done");
     });
 });
@@ -49,7 +53,7 @@ app.post("/api/image", upload.single('image'), function(req, res){
 app.get("/api/images", (req, res) => {
    //res.json(jetpack.list("uploads/"));
     //res.json(data.getItemSync('images'));
-    Image.find({ tags : 'demo'}, 'title tags').exec(function(err, data){
+    Image.find({}, 'title tags filename').exec(function(err, data){
         res.json(data);
     })
 });
@@ -57,7 +61,11 @@ app.get("/api/images", (req, res) => {
 app.get("/image/:id", function(req, res){
     var pt = path.join(__dirname, "uploads");
     var search = req.params.id;
-    res.sendFile(path.join(__dirname, jetpack.find(pt, { matching : search + "*"})[0]));
+    res.sendFile(path.join(__dirname, jetpack.find(pt, { matching : search + "*"})[0] || ""));
+});
+
+app.del("/api/image/:id", function(req, res){
+
 });
 
 app.get("/images", function(req, res){
@@ -70,7 +78,7 @@ app.get("/images", function(req, res){
         res.send(html);
     });
 
-})
+});
 
 app.listen(config.ListenPort, () => {
     console.log(`Listening on port ${config.ListenPort}`);
